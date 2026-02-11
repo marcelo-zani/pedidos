@@ -1,0 +1,50 @@
+[
+    {
+        "id": "1001",
+        "name": "CAMARA 20 CAMBOIM",
+        "unit": "PC",
+        "price": 8.50,
+        "category": "PNEUS E CAMARAS",
+        "image": "https://placehold.co/100x100/e0e0e0/333?text=Camara+20"
+    },
+    {
+        "id": "1002",
+        "name": "CAMARA 26 CAMBOIM",
+        "unit": "PC",
+        "price": 9.20,
+        "category": "PNEUS E CAMARAS",
+        "image": "https://placehold.co/100x100/e0e0e0/333?text=Camara+26"
+    },
+    {
+        "id": "2005",
+        "name": "SELIM MTB CONFORT",
+        "unit": "PC",
+        "price": 25.90,
+        "category": "SELINS",
+        "image": "https://placehold.co/100x100/e0e0e0/333?text=Selim+MTB"
+    },
+    {
+        "id": "3010",
+        "name": "FREIO V-BRAKE ALUMINIO",
+        "unit": "JOGO",
+        "price": 35.00,
+        "category": "FREIOS",
+        "image": "https://placehold.co/100x100/e0e0e0/333?text=V-Brake"
+    },
+    {
+        "id": "4022",
+        "name": "CORRENTE FINA INDEX",
+        "unit": "PC",
+        "price": 18.75,
+        "category": "TRANSMISSAO",
+        "image": "https://placehold.co/100x100/e0e0e0/333?text=Corrente"
+    },
+    {
+        "id": "5001",
+        "name": "PNEU 26X1.95 CRAVO",
+        "unit": "PC",
+        "price": 42.00,
+        "category": "PNEUS E CAMARAS",
+        "image": "https://placehold.co/100x100/e0e0e0/333?text=Pneu+26"
+    }
+]

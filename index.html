@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEK Pedidos v2.0</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>NEK</h1>
+                <p>Sistema de Pedidos</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" placeholder="Digite seu usuário" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" placeholder="Digite sua senha" required>
+                </div>
+                <button type="submit" class="btn-primary">Entrar</button>
+                <p id="login-error" class="error-msg"></p>
+            </form>
+            <div class="login-footer">
+                <small>Acesso restrito a representantes</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CLI (Hidden by default) -->
+    <div id="app-screen" class="app-container hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">NEK <span>Pedidos</span></div>
+            <div class="user-info">
+                <span id="user-display">Rep. Anônimo</span>
+                <button id="btn-logout" class="btn-sm">Sair</button>
+            </div>
+        </header>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Buscar produtos...">
+            </div>
+            <div class="actions">
+                <button id="btn-history" class="btn-secondary">📜 Histórico</button>
+            </div>
+        </div>
+
+        <!-- Product List -->
+        <main class="product-list" id="product-list">
+            <!-- Items will be injected here via JS -->
+            <div class="loading">Carregando produtos...</div>
+        </main>
+
+        <!-- Floating Cart Bar -->
+        <div class="cart-bar">
+            <div class="cart-info">
+                <span class="cart-count">0 itens</span>
+                <span class="cart-total">Total: R$ 0,00</span>
+            </div>
+            <button id="btn-checkout" class="btn-success">Revisar Pedido</button>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="assets/js/storage.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
