@@ -19,9 +19,32 @@ window.loadApp = initApp;
 async function initApp() {
     console.log('Initializing App...');
     await fetchProducts();
-    renderProducts();
-    updateCartUI();
+    // Don't render products yet, wait for sale start
+    STATE.isSaleActive = false;
+    updateUIState();
     setupEventListeners();
+}
+
+function updateUIState() {
+    const list = document.getElementById('product-list');
+    const searchInput = document.getElementById('search-input');
+    const clientDisplay = document.getElementById('client-display');
+
+    if (STATE.isSaleActive) {
+        searchInput.disabled = false;
+        renderProducts();
+        updateCartUI();
+        if (clientDisplay) clientDisplay.innerText = `Cliente: ${STATE.customer.razao || 'Desconhecido'}`;
+    } else {
+        list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-muted);">Clique em <b>+ Nova Venda</b> para iniciar.</div>';
+        searchInput.disabled = true;
+        if (clientDisplay) clientDisplay.innerText = '';
+
+        // Reset Cart UI
+        document.querySelector('.cart-count').innerText = `0 itens`;
+        document.querySelector('.cart-total').innerText = `Total: R$ 0,00`;
+        document.querySelector('.cart-bar').style.transform = 'translateY(100%)';
+    }
 }
 
 function setupEventListeners() {
@@ -31,21 +54,26 @@ function setupEventListeners() {
         renderProducts();
     });
 
-    // Checkout Modal Triggers
+    // Start Sale Trigger
+    document.getElementById('btn-start-sale').addEventListener('click', () => {
+        openClientModal('start');
+    });
+
+    // Checkout Trigger
     document.getElementById('btn-checkout').addEventListener('click', () => {
         if (Object.keys(STATE.cart).length === 0) return alert('Seu carrinho está vazio!');
-        openCheckoutModal();
+        openClientModal('checkout');
     });
 
     document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', () => document.getElementById('checkout-modal').classList.add('hidden'));
+        btn.addEventListener('click', () => document.getElementById('client-modal').classList.add('hidden'));
     });
 
     // CNPJ Search
     document.getElementById('btn-search-cnpj').addEventListener('click', handleCNPJSearch);
 
-    // Confirm Order
-    document.getElementById('btn-confirm-order').addEventListener('click', finalizeOrder);
+    // Confirm Client / Order
+    document.getElementById('btn-confirm-client').addEventListener('click', handleModalConfirm);
 
     // Admin: Add User
     const btnAddUser = document.getElementById('btn-add-user');
@@ -113,6 +141,7 @@ function renderProducts() {
 }
 
 window.updateQty = (id, change) => {
+    if (!STATE.isSaleActive) return alert('Inicie uma nova venda para adicionar produtos.');
     if (!STATE.cart[id]) STATE.cart[id] = 0;
     STATE.cart[id] += change;
 
@@ -139,11 +168,37 @@ function updateCartUI() {
     else bar.style.transform = 'translateY(100%)';
 }
 
-function openCheckoutModal() {
-    const modal = document.getElementById('checkout-modal');
+function openClientModal(mode) {
+    const modal = document.getElementById('client-modal');
     modal.classList.remove('hidden');
 
-    // Render Summary
+    const title = document.getElementById('modal-title');
+    const btnConfirm = document.getElementById('btn-confirm-client');
+    const summary = document.getElementById('order-summary-container');
+
+    // Store mode on the modal element for reference in confirm handler
+    modal.dataset.mode = mode;
+
+    if (mode === 'start') {
+        title.innerText = 'Identificar Cliente';
+        btnConfirm.innerText = 'Iniciar Venda';
+        btnConfirm.className = 'btn-primary';
+        summary.classList.add('hidden');
+
+        // Clear fields for new sale
+        if (!STATE.isSaleActive) {
+            document.querySelectorAll('#client-modal input').forEach(i => i.value = '');
+        }
+    } else {
+        title.innerText = 'Finalizar Pedido';
+        btnConfirm.innerText = 'Confirmar Pedido';
+        btnConfirm.className = 'btn-success';
+        summary.classList.remove('hidden');
+        renderOrderSummary();
+    }
+}
+
+function renderOrderSummary() {
     const list = document.getElementById('modal-cart-items');
     list.innerHTML = '';
     let total = 0;
@@ -163,6 +218,33 @@ function openCheckoutModal() {
     });
 
     document.getElementById('modal-total-price').innerText = `R$ ${total.toFixed(2)}`;
+}
+
+function handleModalConfirm() {
+    const modal = document.getElementById('client-modal');
+    const mode = modal.dataset.mode;
+
+    // Gather Data
+    const customer = {
+        cnpj: document.getElementById('checkout-cnpj').value,
+        razao: document.getElementById('checkout-razao').value,
+        fantasia: document.getElementById('checkout-fantasia').value,
+        endereco: document.getElementById('checkout-endereco').value,
+        tel: document.getElementById('checkout-tel').value,
+        email: document.getElementById('checkout-email').value
+    };
+
+    if (!customer.razao) return alert('Razão Social obrigatória.');
+
+    if (mode === 'start') {
+        STATE.customer = customer;
+        STATE.isSaleActive = true;
+        STATE.cart = {}; // New cart
+        updateUIState();
+        modal.classList.add('hidden');
+    } else {
+        finalizeOrder(customer);
+    }
 }
 
 async function handleCNPJSearch() {
@@ -191,19 +273,7 @@ async function handleCNPJSearch() {
     }
 }
 
-function finalizeOrder() {
-    // Gather Customer Data
-    const customer = {
-        cnpj: document.getElementById('checkout-cnpj').value,
-        razao: document.getElementById('checkout-razao').value,
-        fantasia: document.getElementById('checkout-fantasia').value,
-        endereco: document.getElementById('checkout-endereco').value,
-        tel: document.getElementById('checkout-tel').value,
-        email: document.getElementById('checkout-email').value
-    };
-
-    if (!customer.razao) return alert('Por favor, identifique o cliente (Razão Social obrigatória).');
-
+function finalizeOrder(customer) {
     // Save/Print Logic
     const orderData = {
         id: Date.now(),
@@ -219,12 +289,12 @@ function finalizeOrder() {
     // Simulate Print/Save
     alert(`Pedido #${orderData.id} finalizado com sucesso para ${customer.razao}!\n\n(Dados prontos para impressão/envio)`);
 
-    // Clear
+    // Reset Sales State
+    STATE.isSaleActive = false;
     STATE.cart = {};
-    updateCartUI();
-    renderProducts();
-    document.getElementById('checkout-modal').classList.add('hidden');
+    STATE.customer = {};
+    updateUIState();
 
-    // Reset Form
-    document.querySelectorAll('#checkout-modal input').forEach(i => i.value = '');
+    document.getElementById('client-modal').classList.add('hidden');
+    document.querySelectorAll('#client-modal input').forEach(i => i.value = '');
 }

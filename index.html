@@ -36,8 +36,11 @@
                 <button type="submit" class="btn-primary">Entrar</button>
                 <p id="login-error" class="error-msg"></p>
             </form>
+
             <div class="login-footer">
                 <small>Acesso restrito a representantes</small>
+                <br>
+                <small style="opacity: 0.6; font-size: 0.7rem;">Versão 2.1.0-dev</small>
             </div>
         </div>
     </div>
@@ -49,6 +52,7 @@
         <header class="app-header">
             <div class="logo">NEK <span>Pedidos</span></div>
             <div class="user-info">
+                <span id="client-display" style="margin-right: 15px; color: var(--primary); font-weight: 600;"></span>
                 <span id="user-display">Rep. Anônimo</span>
                 <button id="btn-logout" class="btn-sm">Sair</button>
             </div>
@@ -71,9 +75,10 @@
         <!-- Toolbar -->
         <div class="toolbar">
             <div class="search-bar">
-                <input type="text" id="search-input" placeholder="Buscar produtos...">
+                <input type="text" id="search-input" placeholder="Buscar produtos..." disabled>
             </div>
             <div class="actions">
+                <button id="btn-start-sale" class="btn-primary" style="width: auto;">+ Nova Venda</button>
                 <button id="btn-history" class="btn-secondary">📜 Histórico</button>
             </div>
         </div>
@@ -81,7 +86,7 @@
         <!-- Product List -->
         <main class="product-list" id="product-list">
             <!-- Items will be injected here via JS -->
-            <div class="loading">Carregando produtos...</div>
+            <div class="loading">Inicie uma venda para ver os produtos.</div>
         </main>
 
         <!-- Floating Cart Bar -->
@@ -90,14 +95,14 @@
                 <span class="cart-count">0 itens</span>
                 <span class="cart-total">Total: R$ 0,00</span>
             </div>
-            <button id="btn-checkout" class="btn-success">Revisar Pedido</button>
+            <button id="btn-checkout" class="btn-success">Finalizar Pedido</button>
         </div>
 
-        <!-- Checkout Modal -->
-        <div id="checkout-modal" class="modal hidden">
+        <!-- Client/Checkout Modal -->
+        <div id="client-modal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Finalizar Pedido</h2>
+                    <h2 id="modal-title">Identificar Cliente</h2>
                     <button class="close-modal">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -133,7 +138,7 @@
                         </div>
                     </div>
 
-                    <div class="order-summary">
+                    <div id="order-summary-container" class="order-summary hidden">
                         <h3>Resumo do Pedido</h3>
                         <div id="modal-cart-items"></div>
                         <div class="total-row">
@@ -144,7 +149,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn-secondary close-modal">Cancelar</button>
-                    <button id="btn-confirm-order" class="btn-success">Confirmar Pedido</button>
+                    <button id="btn-confirm-client" class="btn-primary">Iniciar Venda</button>
                 </div>
             </div>
         </div>
