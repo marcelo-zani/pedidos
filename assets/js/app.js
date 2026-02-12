@@ -2,7 +2,8 @@
 const STATE = {
     products: [],
     cart: {}, // { productId: quantity }
-    search: ''
+    search: '',
+    customer: {} // Transient customer data
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,29 +21,54 @@ async function initApp() {
     await fetchProducts();
     renderProducts();
     updateCartUI();
+    setupEventListeners();
+}
 
-    // Event Listeners
+function setupEventListeners() {
+    // Search
     document.getElementById('search-input').addEventListener('input', (e) => {
         STATE.search = e.target.value.toLowerCase();
         renderProducts();
     });
 
+    // Checkout Modal Triggers
     document.getElementById('btn-checkout').addEventListener('click', () => {
         if (Object.keys(STATE.cart).length === 0) return alert('Seu carrinho está vazio!');
-
-        if (confirm('Deseja finalizar e salvar este pedido?')) {
-            const order = saveOrder(STATE.cart, STATE.products);
-            alert(`Pedido #${order.id} salvo com sucesso!`);
-            STATE.cart = {};
-            updateCartUI();
-            renderProducts();
-        }
+        openCheckoutModal();
     });
+
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => document.getElementById('checkout-modal').classList.add('hidden'));
+    });
+
+    // CNPJ Search
+    document.getElementById('btn-search-cnpj').addEventListener('click', handleCNPJSearch);
+
+    // Confirm Order
+    document.getElementById('btn-confirm-order').addEventListener('click', finalizeOrder);
+
+    // Admin: Add User
+    const btnAddUser = document.getElementById('btn-add-user');
+    if (btnAddUser) {
+        btnAddUser.addEventListener('click', () => {
+            const u = document.getElementById('new-user').value;
+            const p = document.getElementById('new-pass').value;
+            const r = document.getElementById('new-role').value;
+
+            if (!u || !p) return alert('Preencha usuário e senha');
+
+            const res = window.registerUser(u, p, r);
+            alert(res.message);
+            if (res.success) {
+                document.getElementById('new-user').value = '';
+                document.getElementById('new-pass').value = '';
+            }
+        });
+    }
 }
 
 async function fetchProducts() {
     try {
-        // In real app, fetch from API or Google Sheet
         const res = await fetch('assets/data/products.json');
         STATE.products = await res.json();
     } catch (error) {
@@ -92,7 +118,7 @@ window.updateQty = (id, change) => {
 
     if (STATE.cart[id] <= 0) delete STATE.cart[id];
 
-    renderProducts(); // Re-render to update UI state
+    renderProducts();
     updateCartUI();
 };
 
@@ -111,4 +137,94 @@ function updateCartUI() {
     const bar = document.querySelector('.cart-bar');
     if (count > 0) bar.style.transform = 'translateY(0)';
     else bar.style.transform = 'translateY(100%)';
+}
+
+function openCheckoutModal() {
+    const modal = document.getElementById('checkout-modal');
+    modal.classList.remove('hidden');
+
+    // Render Summary
+    const list = document.getElementById('modal-cart-items');
+    list.innerHTML = '';
+    let total = 0;
+
+    Object.entries(STATE.cart).forEach(([id, qty]) => {
+        const p = STATE.products.find(x => x.id === id);
+        if (p) {
+            const sub = p.price * qty;
+            total += sub;
+            list.innerHTML += `
+                <div class="summary-item">
+                    <span>${qty}x ${p.name}</span>
+                    <span>R$ ${sub.toFixed(2)}</span>
+                </div>
+            `;
+        }
+    });
+
+    document.getElementById('modal-total-price').innerText = `R$ ${total.toFixed(2)}`;
+}
+
+async function handleCNPJSearch() {
+    const cnpj = document.getElementById('checkout-cnpj').value.replace(/\D/g, '');
+    if (cnpj.length !== 14) return alert('CNPJ inválido (deve ter 14 dígitos)');
+
+    const btn = document.getElementById('btn-search-cnpj');
+    btn.innerText = '⏳';
+
+    try {
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        if (!res.ok) throw new Error('CNPJ não encontrado');
+
+        const data = await res.json();
+
+        document.getElementById('checkout-razao').value = data.razao_social || '';
+        document.getElementById('checkout-fantasia').value = data.nome_fantasia || '';
+        document.getElementById('checkout-endereco').value = `${data.logradouro}, ${data.numero} - ${data.bairro}, ${data.municipio} - ${data.uf}`;
+        document.getElementById('checkout-tel').value = data.ddd_telefone_1 || '';
+        document.getElementById('checkout-email').value = data.email || '';
+
+    } catch (error) {
+        alert('Erro ao buscar CNPJ: ' + error.message);
+    } finally {
+        btn.innerText = '🔍';
+    }
+}
+
+function finalizeOrder() {
+    // Gather Customer Data
+    const customer = {
+        cnpj: document.getElementById('checkout-cnpj').value,
+        razao: document.getElementById('checkout-razao').value,
+        fantasia: document.getElementById('checkout-fantasia').value,
+        endereco: document.getElementById('checkout-endereco').value,
+        tel: document.getElementById('checkout-tel').value,
+        email: document.getElementById('checkout-email').value
+    };
+
+    if (!customer.razao) return alert('Por favor, identifique o cliente (Razão Social obrigatória).');
+
+    // Save/Print Logic
+    const orderData = {
+        id: Date.now(),
+        date: new Date().toLocaleString(),
+        rep: localStorage.getItem('nek_user'),
+        customer: customer,
+        items: STATE.cart,
+        products: STATE.products.filter(p => STATE.cart[p.id])
+    };
+
+    console.log('ORDER FINALIZED:', orderData);
+
+    // Simulate Print/Save
+    alert(`Pedido #${orderData.id} finalizado com sucesso para ${customer.razao}!\n\n(Dados prontos para impressão/envio)`);
+
+    // Clear
+    STATE.cart = {};
+    updateCartUI();
+    renderProducts();
+    document.getElementById('checkout-modal').classList.add('hidden');
+
+    // Reset Form
+    document.querySelectorAll('#checkout-modal input').forEach(i => i.value = '');
 }

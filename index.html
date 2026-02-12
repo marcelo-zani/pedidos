@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEK Pedidos v2.0</title>
-    
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
 
     <!-- LOGIN SCREEN -->
@@ -42,6 +44,7 @@
 
     <!-- MAIN APP CLI (Hidden by default) -->
     <div id="app-screen" class="app-container hidden">
+
         <!-- Header -->
         <header class="app-header">
             <div class="logo">NEK <span>Pedidos</span></div>
@@ -50,6 +53,20 @@
                 <button id="btn-logout" class="btn-sm">Sair</button>
             </div>
         </header>
+
+        <!-- Admin Panel -->
+        <div id="admin-panel" class="admin-panel hidden">
+            <h3>Painel Administrativo</h3>
+            <div class="admin-controls">
+                <input type="text" id="new-user" placeholder="Novo Usuário">
+                <input type="password" id="new-pass" placeholder="Nova Senha">
+                <select id="new-role">
+                    <option value="user">Representante</option>
+                    <option value="admin">Administrador</option>
+                </select>
+                <button id="btn-add-user" class="btn-primary" style="width: auto;">+ Cadastrar</button>
+            </div>
+        </div>
 
         <!-- Toolbar -->
         <div class="toolbar">
@@ -75,6 +92,62 @@
             </div>
             <button id="btn-checkout" class="btn-success">Revisar Pedido</button>
         </div>
+
+        <!-- Checkout Modal -->
+        <div id="checkout-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Finalizar Pedido</h2>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Buscar Cliente (CNPJ)</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="checkout-cnpj" placeholder="Digite apenas números">
+                            <button id="btn-search-cnpj" class="btn-secondary">🔍</button>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Razão Social</label>
+                            <input type="text" id="checkout-razao">
+                        </div>
+                        <div class="form-group">
+                            <label>Nome Fantasia</label>
+                            <input type="text" id="checkout-fantasia">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Endereço Completo</label>
+                        <input type="text" id="checkout-endereco">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Telefone</label>
+                            <input type="text" id="checkout-tel">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="checkout-email">
+                        </div>
+                    </div>
+
+                    <div class="order-summary">
+                        <h3>Resumo do Pedido</h3>
+                        <div id="modal-cart-items"></div>
+                        <div class="total-row">
+                            <span>Total:</span>
+                            <span id="modal-total-price">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary close-modal">Cancelar</button>
+                    <button id="btn-confirm-order" class="btn-success">Confirmar Pedido</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- SCRIPTS -->
@@ -82,4 +155,5 @@
     <script src="assets/js/auth.js"></script>
     <script src="assets/js/app.js"></script>
 </body>
+
 </html>

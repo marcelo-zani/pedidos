@@ -1,8 +1,8 @@
-// Simple Auth Logic
-const USERS = {
-    'admin': 'admin',
-    'user': '1234',
-    'nek': 'nek123'
+// Simple Auth Logic with Roles
+const DEFAULT_USERS = {
+    'admin': { pass: 'admin', role: 'admin' },
+    'user': { pass: '1234', role: 'user' },
+    'nek': { pass: 'nek123', role: 'user' }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,37 +24,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function getUsers() {
+    const stored = JSON.parse(localStorage.getItem('nek_users') || '{}');
+    return { ...DEFAULT_USERS, ...stored };
+}
+
 function login(user, pass) {
+    const users = getUsers();
     const errorMsg = document.getElementById('login-error');
-    if (USERS[user] && USERS[user] === pass) {
+
+    if (users[user] && users[user].pass === pass) {
         localStorage.setItem('nek_user', user);
+        localStorage.setItem('nek_role', users[user].role);
         errorMsg.innerText = '';
         checkSession();
     } else {
         errorMsg.innerText = 'Usuário ou senha incorretos';
-        // Shake animation could go here
     }
 }
 
 function logout() {
     localStorage.removeItem('nek_user');
+    localStorage.removeItem('nek_role');
     checkSession();
 }
 
 function checkSession() {
     const user = localStorage.getItem('nek_user');
+    const role = localStorage.getItem('nek_role');
     const loginScreen = document.getElementById('login-screen');
     const appScreen = document.getElementById('app-screen');
     const userDisplay = document.getElementById('user-display');
+    const adminPanel = document.getElementById('admin-panel');
 
     if (user) {
         loginScreen.classList.add('hidden');
         appScreen.classList.remove('hidden');
-        if(userDisplay) userDisplay.innerText = user;
+        if (userDisplay) userDisplay.innerText = `${user} (${role === 'admin' ? 'Admin' : 'Rep'})`;
+
+        // Show/Hide Admin Panel
+        if (role === 'admin' && adminPanel) {
+            adminPanel.classList.remove('hidden');
+        } else if (adminPanel) {
+            adminPanel.classList.add('hidden');
+        }
+
         // Trigger app load if needed
-        if(window.loadApp) window.loadApp();
+        if (window.loadApp) window.loadApp();
     } else {
         loginScreen.classList.remove('hidden');
         appScreen.classList.add('hidden');
     }
 }
+
+// Admin Functions
+function registerUser(username, password, role = 'user') {
+    const stored = JSON.parse(localStorage.getItem('nek_users') || '{}');
+    if (DEFAULT_USERS[username] || stored[username]) {
+        return { success: false, message: 'Usuário já existe' };
+    }
+
+    stored[username] = { pass: password, role };
+    localStorage.setItem('nek_users', JSON.stringify(stored));
+    return { success: true, message: 'Usuário cadastrado com sucesso' };
+}
+
+// Expose admin function to window
+window.registerUser = registerUser;
+
