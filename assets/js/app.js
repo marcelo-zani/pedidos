@@ -8,8 +8,9 @@ const STATE = {
 
 document.addEventListener('DOMContentLoaded', () => {
     // Check if we are logged in before loading data
-    if (localStorage.getItem('nek_user')) {
+    if (localStorage.getItem('nek_user') && !window.appInitialized) {
         initApp();
+        window.appInitialized = true;
     }
 });
 

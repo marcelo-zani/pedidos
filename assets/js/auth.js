@@ -49,9 +49,20 @@ function logout() {
     checkSession();
 }
 
+
 function checkSession() {
     const user = localStorage.getItem('nek_user');
-    const role = localStorage.getItem('nek_role');
+    let role = localStorage.getItem('nek_role');
+
+    // Auto-recover role if missing (migration fix)
+    if (user && !role) {
+        const users = getUsers();
+        if (users[user]) {
+            role = users[user].role;
+            localStorage.setItem('nek_role', role);
+        }
+    }
+
     const loginScreen = document.getElementById('login-screen');
     const appScreen = document.getElementById('app-screen');
     const userDisplay = document.getElementById('user-display');
@@ -69,11 +80,15 @@ function checkSession() {
             adminPanel.classList.add('hidden');
         }
 
-        // Trigger app load if needed
-        if (window.loadApp) window.loadApp();
+        // Trigger app load if needed (avoid double init)
+        if (window.loadApp && !window.appInitialized) {
+            window.loadApp();
+            window.appInitialized = true;
+        }
     } else {
         loginScreen.classList.remove('hidden');
         appScreen.classList.add('hidden');
+        window.appInitialized = false;
     }
 }
 
