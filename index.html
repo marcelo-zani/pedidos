@@ -463,6 +463,11 @@
             color: white;
         }
 
+        .btn-email {
+            background: #e67e22;
+            color: white;
+        }
+
         .btn-logout {
             background: #7f8c8d;
             color: white;
@@ -571,6 +576,7 @@
             <button class="btn btn-print" onclick="imprimirPDF()">🖨️ Imprimir</button>
             <button class="btn btn-csv" onclick="exportarCSV()">📄 Exportar CSV</button>
             <button class="btn btn-zip" onclick="baixarZIP()">📦 Baixar ZIP (Completo)</button>
+            <button class="btn btn-email" onclick="enviarEmail()">📧 Enviar por E-mail</button>
         </div>
 
         <div style="text-align: center; font-size: 10px; color: #999; margin-top: 20px;" class="version-footer">
@@ -794,8 +800,11 @@
             link.click();
         }
 
-        async function baixarZIP() {
-            if (document.querySelectorAll('tr.has-qty').length === 0) return alert("Adicione produtos!");
+        async function gerarBlobZIP() {
+            if (document.querySelectorAll('tr.has-qty').length === 0) {
+                alert("Adicione produtos primeiro!");
+                return null;
+            }
             const zip = new JSZip();
             const r = getRazaoFinal().replace(/\s+/g, '_');
             zip.file(`IMPORTAR_${r}.csv`, gerarConteudoCSV());
@@ -808,11 +817,45 @@
             resumo += `\n===========================================`;
 
             zip.file(`RESUMO_CLIENTE_${r}.txt`, resumo);
-            const content = await zip.generateAsync({ type: "blob" });
+            return await zip.generateAsync({ type: "blob" });
+        }
+
+        async function baixarZIP() {
+            const content = await gerarBlobZIP();
+            if (!content) return; // Se retornou null (sem produtos)
+
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(content);
+            const r = getRazaoFinal().replace(/\s+/g, '_');
+            link.download = `PEDIDO_${r}.zip`;
+            link.click();
+        }
+
+        async function enviarEmail() {
+            // 1. Gera e baixa o arquivo ZIP
+            const content = await gerarBlobZIP();
+            if (!content) return;
+
+            const r = getRazaoFinal().replace(/\s+/g, '_');
+
+            // Download do arquivo
             const link = document.createElement("a");
             link.href = URL.createObjectURL(content);
             link.download = `PEDIDO_${r}.zip`;
             link.click();
+
+            // 2. Abre o cliente de email
+            const destinatario = "vendas@nek.com.br";
+            const assunto = `PEDIDO_${r}.zip`; // Nome do arquivo sugerido no assunto
+            const corpo = `Olá,\n\nSegue em anexo o pedido do cliente ${getRazaoFinal()}.\n\nArquivo: PEDIDO_${r}.zip (Já foi baixado para seu computador, por favor anexe-o aqui).\n\nAtenciosamente,`;
+
+            const mailtoLink = `mailto:${destinatario}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+
+            // Pequeno delay para garantir que o download iniciou visualmente antes de abrir o email
+            setTimeout(() => {
+                window.location.href = mailtoLink;
+                alert("O arquivo do pedido foi BAIXADO no seu computador.\n\nO seu programa de e-mail será aberto agora.\n\nPOR FAVOR, ANEXE O ARQUIVO BAIXADO AO E-MAIL.");
+            }, 1000);
         }
 
         function imprimirPDF() {
