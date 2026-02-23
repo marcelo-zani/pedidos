@@ -595,14 +595,14 @@
         <div class="config-section">
             <span class="config-title">⚙️ Configurações de Banco</span>
             <div class="config-row">
-                <label>Modo Offline</label>
+                <label>Carregar Banco Local (Automático)</label>
                 <label class="toggle-switch">
                     <input type="checkbox" id="modoOffline" onchange="toggleOffline(this.checked)">
                     <span class="slider"></span>
                 </label>
             </div>
             <div style="margin-top: 10px;">
-                <label>Carregar CSV Local:</label>
+                <label>Carregar CSV Manual:</label>
                 <div style="display: flex; gap: 5px; margin-top: 5px;">
                     <label class="file-input-label">
                         Produtos <input type="file" id="fileProdutos" style="display:none"
@@ -707,10 +707,6 @@
             SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2-L</strong> | 2026
         </div>
 
-        <div id="offlineCacheBtn" style="text-align: center; margin-top: 10px;">
-            <button class="btn-small" onclick="salvarBancosParaOffline()" style="background: var(--green);">💾 Salvar
-                bancos para uso offline</button>
-        </div>
     </div>
 
     <script>
@@ -772,15 +768,17 @@
             document.getElementById(viewId).classList.add('active');
         }
 
-        // --- MODO OFFLINE E CARREGAMENTO LOCAL ---
-        let dbProdutosCSV = null;
-        let dbClientesCSV = null;
+        // --- CARREGAMENTO LOCAL E MANUAL ---
+        // Arquivos predefinidos para carregamento automático
+        const LOCAL_PRODUTOS = 'db_produtos.csv';
+        const LOCAL_CLIENTES = 'db_clientes.csv';
+
         let isOffline = localStorage.getItem('nek_offline') === 'true';
 
         function toggleOffline(checked) {
             localStorage.setItem('nek_offline', checked);
             isOffline = checked;
-            alert(checked ? "Modo Offline ATIVADO. O sistema usará dados locais/cache." : "Modo Offline DESATIVADO. O sistema tentará carregar dados do Google Drive.");
+            alert(checked ? "Carregamento Local ATIVADO. O sistema buscará arquivos na mesma pasta do sistema." : "Carregamento Local DESATIVADO. O sistema buscará dados do Google Drive.");
             window.location.reload();
         }
 
@@ -790,33 +788,12 @@
             const reader = new FileReader();
             reader.onload = function (e) {
                 const content = e.target.result;
-                if (tipo === 'produtos') {
-                    dbProdutosCSV = content;
-                    localStorage.setItem('nek_db_produtos', content);
-                } else {
-                    dbClientesCSV = content;
-                    localStorage.setItem('nek_db_clientes', content);
-                }
-                alert(`Banco de ${tipo} carregado com sucesso!`);
+                // Salva no sessionStorage para persistir apenas durante a sessão atual se houver reload manual
+                sessionStorage.setItem('temp_csv_' + tipo, content);
+                alert(`Arquivo de ${tipo} carregado com sucesso para esta sessão!`);
                 window.location.reload();
             };
             reader.readAsText(file);
-        }
-
-        async function salvarBancosParaOffline() {
-            try {
-                const rProd = await fetch(SHEET_PRODUTOS);
-                const txtProd = await rProd.text();
-                localStorage.setItem('nek_db_produtos', txtProd);
-
-                const rCli = await fetch(SHEET_CLIENTES);
-                const txtCli = await rCli.text();
-                localStorage.setItem('nek_db_clientes', txtCli);
-
-                alert("Bancos salvos localmente com sucesso! Agora você pode usar o Modo Offline.");
-            } catch (e) {
-                alert("Erro ao salvar bancos. Verifique sua conexão com a internet.");
-            }
         }
 
         // --- CÓDIGO ORIGINAL (SISTEMA DE VENDAS) ---
@@ -918,13 +895,17 @@
         async function carregarClientes() {
             try {
                 let txt;
-                if (isOffline) {
-                    txt = localStorage.getItem('nek_db_clientes');
-                    if (!txt) {
-                        console.warn("Nenhum cache de clientes encontrado.");
-                        return;
-                    }
-                    document.getElementById('syncStatus').innerText = "☁️ Offline (Cache)";
+                // Ordem de prioridade: 1. Upload Manual (Sessão) -> 2. Arquivo Local (se toggle ativo) -> 3. Google Drive
+                const tempCSV = sessionStorage.getItem('temp_csv_clientes');
+
+                if (tempCSV) {
+                    txt = tempCSV;
+                    document.getElementById('syncStatus').innerText = "📁 Banco Manual (Sessão)";
+                } else if (isOffline) {
+                    const r = await fetch(LOCAL_CLIENTES);
+                    if (!r.ok) throw new Error("Arquivo local não encontrado");
+                    txt = await r.text();
+                    document.getElementById('syncStatus').innerText = "📂 Banco Local (Auto)";
                 } else {
                     const r = await fetch(SHEET_CLIENTES);
                     txt = await r.text();
@@ -1073,13 +1054,20 @@
 
             try {
                 let txt;
-                if (isOffline) {
-                    txt = localStorage.getItem('nek_db_produtos');
-                    if (!txt) {
-                        document.getElementById('syncStatus').innerText = "❌ Sem cache";
+                const tempCSV = sessionStorage.getItem('temp_csv_produtos');
+
+                if (tempCSV) {
+                    txt = tempCSV;
+                    document.getElementById('syncStatus').innerText = "📁 Banco Manual (Sessão)";
+                    document.getElementById('syncStatus').className = "status-sync sync-success";
+                } else if (isOffline) {
+                    const r = await fetch(LOCAL_PRODUTOS);
+                    if (!r.ok) {
+                        document.getElementById('syncStatus').innerText = "❌ Local não encontrado";
                         return;
                     }
-                    document.getElementById('syncStatus').innerText = "☁️ Offline (Cache)";
+                    txt = await r.text();
+                    document.getElementById('syncStatus').innerText = "📂 Banco Local (Auto)";
                     document.getElementById('syncStatus').className = "status-sync sync-success";
                 } else {
                     const r = await fetch(SHEET_PRODUTOS);
