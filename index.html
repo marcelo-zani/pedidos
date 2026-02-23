@@ -476,6 +476,105 @@
             padding: 5px 10px;
             font-size: 11px;
         }
+
+        /* CONFIG SECTION STYLES */
+        .config-section {
+            background: #eee;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 12px;
+            border: 1px solid #ccc;
+        }
+
+        .config-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
+            color: var(--blue);
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        .config-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .config-row label:not(.toggle-switch) {
+            margin-bottom: 0;
+            flex: 1;
+            text-transform: none;
+            font-size: 12px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--accent);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 10px;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #ddd;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+        }
     </style>
 </head>
 
@@ -492,6 +591,31 @@
             <button class="login-btn" onclick="fazerLogin()">Entrar</button>
             <div id="loginMsg" style="color: red; margin-top: 10px; font-size: 12px;"></div>
         </div>
+
+        <div class="config-section">
+            <span class="config-title">⚙️ Configurações de Banco</span>
+            <div class="config-row">
+                <label>Modo Offline</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="modoOffline" onchange="toggleOffline(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div style="margin-top: 10px;">
+                <label>Carregar CSV Local:</label>
+                <div style="display: flex; gap: 5px; margin-top: 5px;">
+                    <label class="file-input-label">
+                        Produtos <input type="file" id="fileProdutos" style="display:none"
+                            onchange="uploadLocal(this, 'produtos')">
+                    </label>
+                    <label class="file-input-label">
+                        Clientes <input type="file" id="fileClientes" style="display:none"
+                            onchange="uploadLocal(this, 'clientes')">
+                    </label>
+                </div>
+            </div>
+        </div>
+
         <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.2</div>
     </div>
 
@@ -582,6 +706,11 @@
         <div style="text-align: center; font-size: 10px; color: #999; margin-top: 20px;" class="version-footer">
             SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2-L</strong> | 2026
         </div>
+
+        <div id="offlineCacheBtn" style="text-align: center; margin-top: 10px;">
+            <button class="btn-small" onclick="salvarBancosParaOffline()" style="background: var(--green);">💾 Salvar
+                bancos para uso offline</button>
+        </div>
     </div>
 
     <script>
@@ -641,6 +770,53 @@
         function showView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
+        }
+
+        // --- MODO OFFLINE E CARREGAMENTO LOCAL ---
+        let dbProdutosCSV = null;
+        let dbClientesCSV = null;
+        let isOffline = localStorage.getItem('nek_offline') === 'true';
+
+        function toggleOffline(checked) {
+            localStorage.setItem('nek_offline', checked);
+            isOffline = checked;
+            alert(checked ? "Modo Offline ATIVADO. O sistema usará dados locais/cache." : "Modo Offline DESATIVADO. O sistema tentará carregar dados do Google Drive.");
+            window.location.reload();
+        }
+
+        function uploadLocal(input, tipo) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+                if (tipo === 'produtos') {
+                    dbProdutosCSV = content;
+                    localStorage.setItem('nek_db_produtos', content);
+                } else {
+                    dbClientesCSV = content;
+                    localStorage.setItem('nek_db_clientes', content);
+                }
+                alert(`Banco de ${tipo} carregado com sucesso!`);
+                window.location.reload();
+            };
+            reader.readAsText(file);
+        }
+
+        async function salvarBancosParaOffline() {
+            try {
+                const rProd = await fetch(SHEET_PRODUTOS);
+                const txtProd = await rProd.text();
+                localStorage.setItem('nek_db_produtos', txtProd);
+
+                const rCli = await fetch(SHEET_CLIENTES);
+                const txtCli = await rCli.text();
+                localStorage.setItem('nek_db_clientes', txtCli);
+
+                alert("Bancos salvos localmente com sucesso! Agora você pode usar o Modo Offline.");
+            } catch (e) {
+                alert("Erro ao salvar bancos. Verifique sua conexão com a internet.");
+            }
         }
 
         // --- CÓDIGO ORIGINAL (SISTEMA DE VENDAS) ---
@@ -741,8 +917,19 @@
 
         async function carregarClientes() {
             try {
-                const r = await fetch(SHEET_CLIENTES);
-                const txt = await r.text();
+                let txt;
+                if (isOffline) {
+                    txt = localStorage.getItem('nek_db_clientes');
+                    if (!txt) {
+                        console.warn("Nenhum cache de clientes encontrado.");
+                        return;
+                    }
+                    document.getElementById('syncStatus').innerText = "☁️ Offline (Cache)";
+                } else {
+                    const r = await fetch(SHEET_CLIENTES);
+                    txt = await r.text();
+                }
+
                 const linhas = txt.split(/\r?\n/);
                 linhas.forEach((linha, i) => {
                     if (i === 0 || !linha) return;
@@ -751,7 +938,9 @@
                         listaClientes.push({ razao: c[0], cidade: c[1], endereco: c[2], telefone: c[3], cnpj: c[4] });
                     }
                 });
-            } catch (e) { }
+            } catch (e) {
+                console.error("Erro ao carregar clientes:", e);
+            }
         }
 
         const inputRazao = document.getElementById('razaoSocial');
@@ -883,8 +1072,22 @@
             }
 
             try {
-                const r = await fetch(SHEET_PRODUTOS);
-                const txt = await r.text();
+                let txt;
+                if (isOffline) {
+                    txt = localStorage.getItem('nek_db_produtos');
+                    if (!txt) {
+                        document.getElementById('syncStatus').innerText = "❌ Sem cache";
+                        return;
+                    }
+                    document.getElementById('syncStatus').innerText = "☁️ Offline (Cache)";
+                    document.getElementById('syncStatus').className = "status-sync sync-success";
+                } else {
+                    const r = await fetch(SHEET_PRODUTOS);
+                    txt = await r.text();
+                    document.getElementById('syncStatus').innerText = "✅ Sincronizado";
+                    document.getElementById('syncStatus').className = "status-sync sync-success";
+                }
+
                 const linhas = txt.split(/\r?\n/);
                 const tb = document.getElementById('corpoTabela');
                 const limparNum = (v) => {
@@ -916,8 +1119,6 @@
                     tb.appendChild(tr);
                     if (qtdIni > 0) atu(tr.querySelector('.input-qtd'), false);
                 });
-                document.getElementById('syncStatus').innerText = "✅ Sincronizado";
-                document.getElementById('syncStatus').className = "status-sync sync-success";
             } catch (e) { document.getElementById('syncStatus').innerText = "❌ Erro"; }
         }
 
@@ -950,12 +1151,12 @@
         });
 
         // INICIALIZAÇÃO
-        // initUsers(); -> REMOVIDO, não usamos mais localStorage para users
+        // Set toggle state
+        document.getElementById('modoOffline').checked = isOffline;
+
         checkSession();
         carregarClientes();
-        window.carregarDadosFaltantes = carregarProdutos; // Hook para carregar só após login, se quiser
-        // Por padrão já carrega, mas fica invisível
-        // carregarProdutos(); // Chamado dentro do initUsers/login flow agora? Não, mantenho o fluxo original mas só exibo depois.
+        window.carregarDadosFaltantes = carregarProdutos;
         carregarProdutos();
 
     </script>
