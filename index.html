@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEK - Sistema de Pedidos v3.2.2-L</title>
+    <title>NEK - Sistema de Pedidos v3.2.3-LS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -575,6 +575,30 @@
             cursor: pointer;
             font-size: 10px;
         }
+
+        /* GRUPOS DE PRODUTOS */
+        .group-header {
+            background-color: #f1f3f5 !important;
+            font-weight: bold;
+            color: var(--blue);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .group-header td {
+            padding: 8px 12px !important;
+            border-bottom: 2px solid #dee2e6 !important;
+            border-top: 1px solid #dee2e6 !important;
+        }
+
+        @media print {
+            .group-header {
+                background-color: #eee !important;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
     </style>
 </head>
 
@@ -616,7 +640,7 @@
             </div>
         </div>
 
-        <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.2.2</div>
+        <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.2.3</div>
     </div>
 
 
@@ -704,13 +728,13 @@
         </div>
 
         <div style="text-align: center; font-size: 10px; color: #999; margin-top: 20px;" class="version-footer">
-            SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2.2-L</strong> | 2026
+            SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2.3-LS</strong> | 2026
         </div>
 
     </div>
 
     <script>
-        const SHEET_PRODUTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRnUPgmknCzn9EeUSo3y0UfAe0FtGeTCWNZwhE9TxgdLhIQtPglMuoN-xEcWvHiQPzSqf_UQH7C88TP/pub?output=csv';
+        const SHEET_PRODUTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTsTin6EuEQtN4tznviYVRpJgjbzv0mgOiqKLQAju0VBDqySygOduDgQ7547zts4sowSfRsdwTTvVE5/pub?output=csv';
         const SHEET_CLIENTES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQYCLsgEtBzLW7931ivMquRWiwRl9twob9MOnuuQAA5MtukdGVOQPsJJiWsSlzlFZDzKpmj3nRAOoRJ/pub?output=csv';
 
         // --- SISTEMA DE LOGIN SIMPLIFICADO ---
@@ -1078,6 +1102,8 @@
 
                 const linhas = txt.split(/\r?\n/);
                 const tb = document.getElementById('corpoTabela');
+                tb.innerHTML = ""; // Limpa antes de carregar
+
                 const limparNum = (v) => {
                     if (!v) return 0;
                     let n = v.replace(/[^\d,.-]/g, '').trim();
@@ -1085,29 +1111,56 @@
                     else n = n.replace(',', '.');
                     return parseFloat(n) || 0;
                 };
+
+                const grupos = {};
+
                 linhas.forEach((l, i) => {
                     if (i === 0 || !l) return;
                     let c = parseCSVLine(l);
                     if (c.length < 5) return;
-                    const vE = limparNum(c[4]); const vG = limparNum(c[6]);
-                    const codB = c[1];
 
-                    const itemSalvo = cache ? cache.itens.find(it => it.c === codB) : null;
-                    const qtdIni = itemSalvo ? itemSalvo.q : 0;
-                    const descIni = itemSalvo ? itemSalvo.d : 0;
-
-                    const tr = document.createElement('tr');
-                    tr.dataset.valE = vE; tr.dataset.valG = vG; tr.dataset.codB = codB;
-                    tr.dataset.search = (c[0] + c[1] + c[3]).toLowerCase();
-                    tr.innerHTML = `<td class="col-cod">${c[0]}/${c[1]}</td><td class="col-desc">${c[3]}</td><td class="col-un">${c[2]}</td>
-                    <td class="col-vlr">R$ ${vE.toFixed(3).replace('.', ',')}</td><td class="col-vlr">R$ ${vG.toFixed(3).replace('.', ',')}</td>
-                    <td class="col-qtd"><input type="number" class="input-qtd" value="${qtdIni}" oninput="atu(this)" onfocus="this.select()"><span class="print-text">${qtdIni}</span></td>
-                    <td class="col-desc-p"><input type="number" class="input-desc" value="${descIni}" oninput="atu(this)" onfocus="this.select()"><span class="print-text">${descIni}%</span></td>
-                    <td class="col-tot" style="text-align:right">R$ 0,000</td><td class="col-tot" style="text-align:right">R$ 0,000</td>`;
-                    tb.appendChild(tr);
-                    if (qtdIni > 0) atu(tr.querySelector('.input-qtd'), false);
+                    // Coluna L é índice 11. Se não existir, agrupa em "GERAL"
+                    const categoria = (c[11] || "GERAL").toUpperCase();
+                    if (!grupos[categoria]) grupos[categoria] = [];
+                    grupos[categoria].push(c);
                 });
-            } catch (e) { document.getElementById('syncStatus').innerText = "❌ Erro"; }
+
+                // Ordena categorias alfabeticamente
+                const categoriasOrdenadas = Object.keys(grupos).sort();
+
+                categoriasOrdenadas.forEach(cat => {
+                    // Cabeçalho do Grupo
+                    const grTr = document.createElement('tr');
+                    grTr.className = 'group-header';
+                    grTr.dataset.catName = cat;
+                    grTr.innerHTML = `<td colspan="9">📂 ${cat}</td>`;
+                    tb.appendChild(grTr);
+
+                    grupos[cat].forEach(c => {
+                        const vE = limparNum(c[4]); const vG = limparNum(c[6]);
+                        const codB = c[1];
+
+                        const itemSalvo = cache ? cache.itens.find(it => it.c === codB) : null;
+                        const qtdIni = itemSalvo ? itemSalvo.q : 0;
+                        const descIni = itemSalvo ? itemSalvo.d : 0;
+
+                        const tr = document.createElement('tr');
+                        tr.dataset.valE = vE; tr.dataset.valG = vG; tr.dataset.codB = codB;
+                        tr.dataset.search = (c[0] + c[1] + c[3]).toLowerCase();
+                        tr.dataset.parentCat = cat;
+                        tr.innerHTML = `<td class="col-cod">${c[0]}/${c[1]}</td><td class="col-desc">${c[3]}</td><td class="col-un">${c[2]}</td>
+                        <td class="col-vlr">R$ ${vE.toFixed(3).replace('.', ',')}</td><td class="col-vlr">R$ ${vG.toFixed(3).replace('.', ',')}</td>
+                        <td class="col-qtd"><input type="number" class="input-qtd" value="${qtdIni}" oninput="atu(this)" onfocus="this.select()"><span class="print-text">${qtdIni}</span></td>
+                        <td class="col-desc-p"><input type="number" class="input-desc" value="${descIni}" oninput="atu(this)" onfocus="this.select()"><span class="print-text">${descIni}%</span></td>
+                        <td class="col-tot" style="text-align:right">R$ 0,000</td><td class="col-tot" style="text-align:right">R$ 0,000</td>`;
+                        tb.appendChild(tr);
+                        if (qtdIni > 0) atu(tr.querySelector('.input-qtd'), false);
+                    });
+                });
+            } catch (e) {
+                console.error(e);
+                document.getElementById('syncStatus').innerText = "❌ Erro";
+            }
         }
 
         function atu(el, salvar = true) {
@@ -1131,7 +1184,21 @@
 
         document.getElementById('inputBusca').onkeyup = function () {
             const f = this.value.toLowerCase();
-            document.querySelectorAll('#corpoTabela tr').forEach(tr => { tr.style.display = tr.dataset.search.includes(f) ? "" : "none"; });
+            const visiveisPorCat = {};
+
+            // Primeiro filtra os produtos e guarda quais categorias têm itens visíveis
+            document.querySelectorAll('#corpoTabela tr:not(.group-header)').forEach(tr => {
+                const searchMatch = tr.dataset.search.includes(f);
+                tr.style.display = searchMatch ? "" : "none";
+                if (searchMatch) {
+                    visiveisPorCat[tr.dataset.parentCat] = true;
+                }
+            });
+
+            // Depois mostra/esconde os cabeçalhos das categorias
+            document.querySelectorAll('.group-header').forEach(gr => {
+                gr.style.display = visiveisPorCat[gr.dataset.catName] ? "" : "none";
+            });
         };
 
         ['razaoSocial', 'endereco', 'nomeContato', 'telefone', 'obsVenda'].forEach(id => {
