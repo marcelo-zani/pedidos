@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEK - Sistema de Pedidos v3.2.3-LS</title>
+    <title>NEK - Sistema de Pedidos v3.2.4-LS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -640,7 +640,7 @@
             </div>
         </div>
 
-        <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.2.3</div>
+        <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.2.4</div>
     </div>
 
 
@@ -728,7 +728,7 @@
         </div>
 
         <div style="text-align: center; font-size: 10px; color: #999; margin-top: 20px;" class="version-footer">
-            SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2.3-LS</strong> | 2026
+            SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2.4-LS</strong> | 2026
         </div>
 
     </div>
@@ -1113,6 +1113,7 @@
                 };
 
                 const grupos = {};
+                const ordemCategorias = [];
 
                 linhas.forEach((l, i) => {
                     if (i === 0 || !l) return;
@@ -1121,14 +1122,14 @@
 
                     // Coluna L é índice 11. Se não existir, agrupa em "GERAL"
                     const categoria = (c[11] || "GERAL").toUpperCase();
-                    if (!grupos[categoria]) grupos[categoria] = [];
+                    if (!grupos[categoria]) {
+                        grupos[categoria] = [];
+                        ordemCategorias.push(categoria);
+                    }
                     grupos[categoria].push(c);
                 });
 
-                // Ordena categorias alfabeticamente
-                const categoriasOrdenadas = Object.keys(grupos).sort();
-
-                categoriasOrdenadas.forEach(cat => {
+                ordemCategorias.forEach(cat => {
                     // Cabeçalho do Grupo
                     const grTr = document.createElement('tr');
                     grTr.className = 'group-header';
