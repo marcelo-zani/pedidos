@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEK - Sistema de Pedidos v3.2.4-LS</title>
+    <title>NEK - Sistema de Pedidos v3.2.5-LS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -300,13 +300,24 @@
             text-align: center;
         }
 
+        .col-desc-vlr {
+            width: 70px;
+            text-align: center;
+        }
+
+        .col-vlr-liq {
+            width: 95px;
+            text-align: right;
+        }
+
         .col-tot {
             width: 105px;
             text-align: right;
         }
 
         .input-qtd,
-        .input-desc {
+        .input-desc,
+        .input-desc-vlr {
             width: 100%;
             font-weight: bold;
             text-align: center;
@@ -374,8 +385,8 @@
 
             th:nth-child(4),
             td:nth-child(4),
-            th:nth-child(8),
-            td:nth-child(8) {
+            th:nth-child(10),
+            td:nth-child(10) {
                 display: none !important;
             }
 
@@ -640,7 +651,7 @@
             </div>
         </div>
 
-        <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.2.4</div>
+        <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.2.5</div>
     </div>
 
 
@@ -711,6 +722,8 @@
                         <th class="col-vlr">Vlr C/ IPI</th>
                         <th class="col-qtd">Qtd</th>
                         <th class="col-desc-p">D%</th>
+                        <th class="col-desc-vlr">D(R$)</th>
+                        <th class="col-vlr-liq">V.Un C/ IPI Desc</th>
                         <th class="col-tot">Tot S/ IPI</th>
                         <th class="col-tot">Tot C/ IPI</th>
                     </tr>
@@ -728,7 +741,7 @@
         </div>
 
         <div style="text-align: center; font-size: 10px; color: #999; margin-top: 20px;" class="version-footer">
-            SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2.4-LS</strong> | 2026
+            SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2.5-LS</strong> | 2026
         </div>
 
     </div>
@@ -863,7 +876,8 @@
                 itens.push({
                     c: tr.dataset.codB,
                     q: tr.querySelector('.input-qtd').value,
-                    d: tr.querySelector('.input-desc').value
+                    d: tr.querySelector('.input-desc').value,
+                    dv: tr.querySelector('.input-desc-vlr') ? tr.querySelector('.input-desc-vlr').value : 0
                 });
             });
             const dados = {
@@ -1006,7 +1020,7 @@
             let resumo = `===========================================\n      RESUMO DO PEDIDO - NEK\n===========================================\n`;
             resumo += `Data:      ${new Date().toLocaleDateString('pt-BR')}\nCliente:   ${getRazaoFinal()}\nCNPJ:      ${getCnpjFinal()}\nTelefone:  ${document.getElementById('telefone').value}\nContato:   ${document.getElementById('nomeContato').value}\nEndereço:  ${document.getElementById('endereco').value}\n-------------------------------------------\nTOTAL DO PEDIDO: ${document.getElementById('headerTotalGeral').innerText}\n-------------------------------------------\nOBS: ${document.getElementById('obsVenda').value}\n\nITENS DO PEDIDO:\nCODIGO      | QTD | TOTAL C/ IPI\n`;
             document.querySelectorAll('tr.has-qty').forEach(tr => {
-                resumo += `${tr.cells[0].innerText.padEnd(11)} | ${tr.querySelector('.input-qtd').value.padEnd(3)} | ${tr.cells[8].innerText}\n`;
+                resumo += `${tr.cells[0].innerText.padEnd(11)} | ${tr.querySelector('.input-qtd').value.padEnd(3)} | ${tr.cells[10].innerText}\n`;
             });
             resumo += `\n===========================================`;
 
@@ -1134,7 +1148,7 @@
                     const grTr = document.createElement('tr');
                     grTr.className = 'group-header';
                     grTr.dataset.catName = cat;
-                    grTr.innerHTML = `<td colspan="9">📂 ${cat}</td>`;
+                    grTr.innerHTML = `<td colspan="11">📂 ${cat}</td>`;
                     tb.appendChild(grTr);
 
                     grupos[cat].forEach(c => {
@@ -1144,6 +1158,14 @@
                         const itemSalvo = cache ? cache.itens.find(it => it.c === codB) : null;
                         const qtdIni = itemSalvo ? itemSalvo.q : 0;
                         const descIni = itemSalvo ? itemSalvo.d : 0;
+                        let descVlrIni = 0;
+                        if (itemSalvo) {
+                            if (itemSalvo.dv !== undefined) {
+                                descVlrIni = parseFloat(itemSalvo.dv) || 0;
+                            } else {
+                                descVlrIni = vG * ((parseFloat(itemSalvo.d) || 0) / 100);
+                            }
+                        }
 
                         const tr = document.createElement('tr');
                         tr.dataset.valE = vE; tr.dataset.valG = vG; tr.dataset.codB = codB;
@@ -1151,11 +1173,13 @@
                         tr.dataset.parentCat = cat;
                         tr.innerHTML = `<td class="col-cod">${c[0]}/${c[1]}</td><td class="col-desc">${c[3]}</td><td class="col-un">${c[2]}</td>
                         <td class="col-vlr">R$ ${vE.toFixed(3).replace('.', ',')}</td><td class="col-vlr">R$ ${vG.toFixed(3).replace('.', ',')}</td>
-                        <td class="col-qtd"><input type="number" class="input-qtd" value="${qtdIni}" oninput="atu(this)" onfocus="this.select()"><span class="print-text">${qtdIni}</span></td>
-                        <td class="col-desc-p"><input type="number" class="input-desc" value="${descIni}" oninput="atu(this)" onfocus="this.select()"><span class="print-text">${descIni}%</span></td>
+                        <td class="col-qtd"><input type="number" class="input-qtd" value="${qtdIni}" oninput="atu(this, null, true)" onfocus="this.select()"><span class="print-text">${qtdIni}</span></td>
+                        <td class="col-desc-p"><input type="number" class="input-desc" value="${descIni}" oninput="atu(this, 'p', true)" onfocus="this.select()"><span class="print-text">${descIni}%</span></td>
+                        <td class="col-desc-vlr"><input type="number" class="input-desc-vlr" value="${descVlrIni}" oninput="atu(this, 'v', true)" step="0.01" onfocus="this.select()"><span class="print-text">R$ ${descVlrIni.toFixed(2)}</span></td>
+                        <td class="col-vlr-liq" style="text-align:right">R$ 0,000</td>
                         <td class="col-tot" style="text-align:right">R$ 0,000</td><td class="col-tot" style="text-align:right">R$ 0,000</td>`;
                         tb.appendChild(tr);
-                        if (qtdIni > 0) atu(tr.querySelector('.input-qtd'), false);
+                        if (qtdIni > 0) atu(tr.querySelector('.input-qtd'), null, false);
                     });
                 });
             } catch (e) {
@@ -1164,17 +1188,45 @@
             }
         }
 
-        function atu(el, salvar = true) {
+        function atu(el, changedType = null, salvar = true) {
             const tr = el.closest('tr');
             const q = parseFloat(tr.querySelector('.input-qtd').value) || 0;
-            const d = parseFloat(tr.querySelector('.input-desc').value) || 0;
+            const inputD = tr.querySelector('.input-desc');
+            const inputDV = tr.querySelector('.input-desc-vlr');
+
+            const vE = parseFloat(tr.dataset.valE);
+            const vG = parseFloat(tr.dataset.valG);
+
+            let d = parseFloat(inputD.value) || 0;
+            let dv = parseFloat(inputDV ? inputDV.value : 0) || 0;
+
+            if (changedType === 'p') {
+                dv = vG * (d / 100);
+                if (inputDV) inputDV.value = dv ? parseFloat(dv.toFixed(3)) : 0;
+            } else if (changedType === 'v') {
+                if (vG > 0) d = (dv / vG) * 100;
+                else d = 0;
+                inputD.value = d ? parseFloat(d.toFixed(3)) : 0;
+            } else {
+                dv = vG * (d / 100);
+                if (inputDV) inputDV.value = dv ? parseFloat(dv.toFixed(3)) : 0;
+            }
+
             if (q > 0) tr.classList.add('has-qty'); else tr.classList.remove('has-qty');
             tr.querySelector('.input-qtd + .print-text').innerText = q;
             tr.querySelector('.input-desc + .print-text').innerText = d + "%";
-            const vE = parseFloat(tr.dataset.valE); const vG = parseFloat(tr.dataset.valG);
-            const subE = (vE * q) * (1 - (d / 100)); const subG = (vG * q) * (1 - (d / 100));
-            tr.cells[7].innerText = "R$ " + subE.toFixed(3).replace('.', ',');
-            tr.cells[8].innerText = "R$ " + subG.toFixed(3).replace('.', ',');
+            if (inputDV && tr.querySelector('.input-desc-vlr + .print-text')) {
+                tr.querySelector('.input-desc-vlr + .print-text').innerText = "R$ " + dv.toFixed(2);
+            }
+
+            const vGLiq = vG * (1 - (d / 100));
+            const subE = (vE * q) * (1 - (d / 100));
+            const subG = (vG * q) * (1 - (d / 100));
+
+            tr.cells[8].innerText = "R$ " + vGLiq.toFixed(3).replace('.', ',');
+            tr.cells[9].innerText = "R$ " + subE.toFixed(3).replace('.', ',');
+            tr.cells[10].innerText = "R$ " + subG.toFixed(3).replace('.', ',');
+
             let tot = 0;
             document.querySelectorAll('tr.has-qty').forEach(t => {
                 tot += (parseFloat(t.dataset.valG) * (parseFloat(t.querySelector('.input-qtd').value) || 0)) * (1 - ((parseFloat(t.querySelector('.input-desc').value) || 0) / 100));
