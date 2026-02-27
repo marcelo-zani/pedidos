@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEK - Sistema de Pedidos v3.2.6-LS</title>
+    <title>NEK - Sistema de Pedidos v3.2.7-LS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -301,8 +301,7 @@
         }
 
         .col-desc-vlr {
-            width: 55px;
-            /* Reduzido de 70px */
+            width: 60px;
             text-align: center;
         }
 
@@ -326,7 +325,7 @@
             text-align: center;
             border: 1px solid var(--accent);
             border-radius: 4px;
-            padding: 4px;
+            padding: 4px 1px;
         }
 
         .print-text {
@@ -392,6 +391,52 @@
             td:nth-child(10) {
                 display: none !important;
             }
+
+            th:nth-child(1) {
+                width: 11% !important;
+            }
+
+            /* Código */
+            th:nth-child(2) {
+                width: 34% !important;
+            }
+
+            /* Descrição mais larga */
+            th:nth-child(3) {
+                width: 3% !important;
+            }
+
+            /* UN */
+            th:nth-child(5) {
+                width: 11% !important;
+            }
+
+            /* Vlr C/ IPI */
+            th:nth-child(6) {
+                width: 5% !important;
+            }
+
+            /* Qtd */
+            th:nth-child(7) {
+                width: 6% !important;
+            }
+
+            /* D% */
+            th:nth-child(8) {
+                width: 7% !important;
+            }
+
+            /* D(R$) */
+            th:nth-child(9) {
+                width: 11% !important;
+            }
+
+            /* V.Un C/ IPI Desc */
+            th:nth-child(11) {
+                width: 12% !important;
+            }
+
+            /* Tot C/ IPI */
 
             table {
                 border: 1px solid #000;
@@ -654,7 +699,7 @@
             </div>
         </div>
 
-        <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.2.6</div>
+        <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.2.7</div>
     </div>
 
 
@@ -744,7 +789,7 @@
         </div>
 
         <div style="text-align: center; font-size: 10px; color: #999; margin-top: 20px;" class="version-footer">
-            SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2.6-LS</strong> | 2026
+            SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2.7-LS</strong> | 2026
         </div>
 
     </div>
@@ -1177,8 +1222,8 @@
                         tr.innerHTML = `<td class="col-cod">${c[0]}/${c[1]}</td><td class="col-desc">${c[3]}</td><td class="col-un">${c[2]}</td>
                         <td class="col-vlr">R$ ${vE.toFixed(2).replace('.', ',')}</td><td class="col-vlr">R$ ${vG.toFixed(2).replace('.', ',')}</td>
                         <td class="col-qtd"><input type="number" class="input-qtd" value="${qtdIni}" oninput="atu(this, null, true)" onfocus="this.select()"><span class="print-text">${qtdIni}</span></td>
-                        <td class="col-desc-p"><input type="number" class="input-desc" value="${descIni}" oninput="atu(this, 'p', true)" onfocus="this.select()"><span class="print-text">${descIni}%</span></td>
-                        <td class="col-desc-vlr"><input type="number" class="input-desc-vlr" value="${descVlrIni}" oninput="atu(this, 'v', true)" step="0.01" onfocus="this.select()"><span class="print-text">R$ ${descVlrIni.toFixed(2)}</span></td>
+                        <td class="col-desc-p"><input type="number" class="input-desc" value="${descIni}" oninput="atu(this, 'p', true)" onfocus="this.select()"><span class="print-text">${parseFloat(descIni).toFixed(2).replace('.', ',')}%</span></td>
+                        <td class="col-desc-vlr"><input type="number" class="input-desc-vlr" value="${descVlrIni}" oninput="atu(this, 'v', true)" step="0.01" onfocus="this.select()"><span class="print-text">R$ ${descVlrIni.toFixed(2).replace('.', ',')}</span></td>
                         <td class="col-vlr-liq" style="text-align:right">R$ 0,00</td>
                         <td class="col-tot" style="text-align:right">R$ 0,00</td><td class="col-tot" style="text-align:right">R$ 0,00</td>`;
                         tb.appendChild(tr);
@@ -1217,9 +1262,9 @@
 
             if (q > 0) tr.classList.add('has-qty'); else tr.classList.remove('has-qty');
             tr.querySelector('.input-qtd + .print-text').innerText = q;
-            tr.querySelector('.input-desc + .print-text').innerText = d + "%";
+            tr.querySelector('.input-desc + .print-text').innerText = d.toFixed(2).replace('.', ',') + "%";
             if (inputDV && tr.querySelector('.input-desc-vlr + .print-text')) {
-                tr.querySelector('.input-desc-vlr + .print-text').innerText = "R$ " + dv.toFixed(2);
+                tr.querySelector('.input-desc-vlr + .print-text').innerText = "R$ " + dv.toFixed(2).replace('.', ',');
             }
 
             const vGLiq = vG * (1 - (d / 100));
