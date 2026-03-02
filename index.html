@@ -362,7 +362,8 @@
             .version-footer,
             .autocomplete-suggestions,
             #cnpjBusca,
-            .logout-btn-area {
+            .logout-btn-area,
+            #carrinhoBox {
                 display: none !important;
             }
 
@@ -746,6 +747,41 @@
                 <div class="total-header-box">
                     <div class="total-header-value" id="headerTotalGeral">R$ 0,00</div>
                 </div>
+            </div>
+        </div>
+
+        <div id="carrinhoBox" style="display:none; margin-bottom: 20px;">
+            <div
+                style="background: #eafaf1; color: #1b5e20; padding: 10px; border-radius: 8px 8px 0 0; font-weight: bold; border: 2px solid var(--green); border-bottom: none; display: flex; justify-content: space-between; align-items: center;">
+                <span>🛒 Itens Adicionados ao Pedido</span>
+                <span id="carrinhoCount"
+                    style="background: var(--green); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px;">0
+                    itens</span>
+            </div>
+            <div class="table-container"
+                style="max-height: 250px; margin-top: 0; border-radius: 0 0 8px 8px; border: 2px solid var(--green); overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-cod" style="background: var(--green); top: 0; position: sticky;">Código</th>
+                            <th class="col-desc" style="background: var(--green); top: 0; position: sticky;">Descrição
+                            </th>
+                            <th class="col-vlr" style="background: var(--green); top: 0; position: sticky;">Vlr C/ IPI
+                            </th>
+                            <th class="col-qtd" style="background: var(--green); top: 0; position: sticky;">Qtd</th>
+                            <th class="col-desc-p" style="background: var(--green); top: 0; position: sticky;">D%</th>
+                            <th class="col-desc-vlr" style="background: var(--green); top: 0; position: sticky;">D(R$)
+                            </th>
+                            <th class="col-vlr-liq" style="background: var(--green); top: 0; position: sticky;">V.Un Liq
+                            </th>
+                            <th class="col-tot" style="background: var(--green); top: 0; position: sticky;">Total</th>
+                            <th
+                                style="width: 40px; text-align: center; background: var(--green); top: 0; position: sticky;">
+                                🗑️</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoCarrinho"></tbody>
+                </table>
             </div>
         </div>
 
@@ -1282,6 +1318,98 @@
             });
             document.getElementById('headerTotalGeral').innerText = "R$ " + tot.toFixed(2).replace('.', ',');
             if (salvar) salvarPedido();
+            renderizarCarrinho();
+        }
+
+        function renderizarCarrinho() {
+            let tbody = document.getElementById('corpoCarrinho');
+            let hasItems = false;
+            let itemCount = 0;
+
+            const existingRows = Array.from(tbody.querySelectorAll('tr'));
+            const existingMap = new Map(existingRows.map(tr => [tr.dataset.cartCod, tr]));
+
+            document.querySelectorAll('#corpoTabela tr.has-qty').forEach(mainTr => {
+                hasItems = true;
+                itemCount++;
+                const cod = mainTr.dataset.codB;
+                const desc = mainTr.cells[1].innerText;
+                const vG = mainTr.dataset.valG;
+                const qtd = mainTr.querySelector('.input-qtd').value;
+                const descP = mainTr.querySelector('.input-desc').value;
+                const inputDescVlr = mainTr.querySelector('.input-desc-vlr');
+                const descVlr = inputDescVlr ? inputDescVlr.value : 0;
+                const vLiq = mainTr.cells[8].innerText;
+                const tot = mainTr.cells[10].innerText;
+
+                let cartTr = existingMap.get(cod);
+                if (cartTr) {
+                    const iQtd = cartTr.querySelector('.input-qtd');
+                    if (document.activeElement !== iQtd) iQtd.value = qtd;
+
+                    const iDesc = cartTr.querySelector('.input-desc');
+                    if (document.activeElement !== iDesc) iDesc.value = descP;
+
+                    const iDescVlr = cartTr.querySelector('.input-desc-vlr');
+                    if (iDescVlr && document.activeElement !== iDescVlr) iDescVlr.value = descVlr;
+
+                    cartTr.cells[6].innerText = vLiq;
+                    cartTr.cells[7].innerText = tot;
+
+                    existingMap.delete(cod);
+                } else {
+                    cartTr = document.createElement('tr');
+                    cartTr.dataset.cartCod = cod;
+                    let html = `
+                        <td>${mainTr.cells[0].innerText}</td>
+                        <td style="font-size: 11px;">${desc}</td>
+                        <td style="text-align: right">R$ ${parseFloat(vG).toFixed(2).replace('.', ',')}</td>
+                        <td><input type="number" class="input-qtd" value="${qtd}" oninput="updateFromCart(this, '${cod}', 'qtd')" onfocus="this.select()"></td>
+                        <td><input type="number" class="input-desc" value="${descP}" oninput="updateFromCart(this, '${cod}', 'p')" onfocus="this.select()"></td>
+                    `;
+
+                    if (inputDescVlr) {
+                        html += `<td><input type="number" class="input-desc-vlr" value="${descVlr}" oninput="updateFromCart(this, '${cod}', 'v')" step="0.01" onfocus="this.select()"></td>`;
+                    } else {
+                        html += `<td></td>`;
+                    }
+
+                    html += `
+                        <td style="text-align: right">${vLiq}</td>
+                        <td style="text-align: right; font-weight: bold; color: var(--blue);">${tot}</td>
+                        <td style="text-align: center;"><button class="btn-small btn-clear" tabindex="-1" onclick="updateFromCart(this, '${cod}', 'qtd', 0)" style="padding: 4px; line-height: 1;" title="Remover">X</button></td>
+                    `;
+                    cartTr.innerHTML = html;
+                    tbody.appendChild(cartTr);
+                }
+            });
+
+            existingMap.forEach(tr => tr.remove());
+
+            document.getElementById('carrinhoBox').style.display = hasItems ? 'block' : 'none';
+            document.getElementById('carrinhoCount').innerText = itemCount + (itemCount === 1 ? ' item' : ' itens');
+        }
+
+        function updateFromCart(el, codB, field, forceValue = null) {
+            const mainTr = document.querySelector(`#corpoTabela tr[data-cod-b="${codB}"]`);
+            if (mainTr) {
+                const val = forceValue !== null ? forceValue : el.value;
+                if (field === 'qtd') {
+                    const mainInput = mainTr.querySelector('.input-qtd');
+                    mainInput.value = val;
+                    atu(mainInput);
+                } else if (field === 'p') {
+                    const mainInput = mainTr.querySelector('.input-desc');
+                    mainInput.value = val;
+                    atu(mainInput, 'p');
+                } else if (field === 'v') {
+                    const mainInput = mainTr.querySelector('.input-desc-vlr');
+                    if (mainInput) {
+                        mainInput.value = val;
+                        atu(mainInput, 'v');
+                    }
+                }
+            }
         }
 
         document.getElementById('inputBusca').onkeyup = function () {
