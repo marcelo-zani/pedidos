@@ -822,6 +822,7 @@
                 // Salva na sessão (memória temporária da aba)
                 sessionStorage.setItem('nek_session', JSON.stringify({ u: found.u }));
                 document.getElementById('loginMsg').innerText = "";
+                alert("Antes de iniciar um novo pedido clique na opção Limpar");
                 redirecionar(found.u);
             } else {
                 document.getElementById('loginMsg').innerText = "Usuário ou senha inválidos!";
