@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEK - Sistema de Pedidos v3.2.7-LS</title>
+    <title>NEK - Sistema de Pedidos v3.3.1-LS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -388,8 +388,8 @@
 
             th:nth-child(4),
             td:nth-child(4),
-            th:nth-child(10),
-            td:nth-child(10) {
+            th:nth-child(9),
+            td:nth-child(9) {
                 display: none !important;
             }
 
@@ -397,47 +397,40 @@
                 width: 11% !important;
             }
 
-            /* Código */
+            /* Descrição */
             th:nth-child(2) {
-                width: 34% !important;
+                width: 45% !important;
             }
 
-            /* Descrição mais larga */
+            /* UN */
             th:nth-child(3) {
                 width: 3% !important;
             }
 
-            /* UN */
+            /* Qtd */
             th:nth-child(5) {
-                width: 11% !important;
-            }
-
-            /* Vlr C/ IPI */
-            th:nth-child(6) {
                 width: 5% !important;
             }
 
-            /* Qtd */
-            th:nth-child(7) {
+            /* D% */
+            th:nth-child(6) {
                 width: 6% !important;
             }
 
-            /* D% */
-            th:nth-child(8) {
+            /* D(R$) */
+            th:nth-child(7) {
                 width: 7% !important;
             }
 
-            /* D(R$) */
-            th:nth-child(9) {
+            /* V.Un C/ IPI Desc */
+            th:nth-child(8) {
                 width: 11% !important;
             }
 
-            /* V.Un C/ IPI Desc */
-            th:nth-child(11) {
+            /* Tot C/ IPI */
+            th:nth-child(10) {
                 width: 12% !important;
             }
-
-            /* Tot C/ IPI */
 
             table {
                 border: 1px solid #000;
@@ -700,7 +693,7 @@
             </div>
         </div>
 
-        <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.2.7</div>
+        <div style="margin-top: 20px; font-size: 11px; color: #888;">NEK Pedidos v3.3.1</div>
     </div>
 
 
@@ -766,8 +759,6 @@
                             <th class="col-cod" style="background: var(--green); top: 0; position: sticky;">Código</th>
                             <th class="col-desc" style="background: var(--green); top: 0; position: sticky;">Descrição
                             </th>
-                            <th class="col-vlr" style="background: var(--green); top: 0; position: sticky;">Vlr C/ IPI
-                            </th>
                             <th class="col-qtd" style="background: var(--green); top: 0; position: sticky;">Qtd</th>
                             <th class="col-desc-p" style="background: var(--green); top: 0; position: sticky;">D%</th>
                             <th class="col-desc-vlr" style="background: var(--green); top: 0; position: sticky;">D(R$)
@@ -803,7 +794,6 @@
                         <th class="col-desc">Descrição</th>
                         <th class="col-un">UN</th>
                         <th class="col-vlr">Vlr S/ IPI</th>
-                        <th class="col-vlr">Vlr C/ IPI</th>
                         <th class="col-qtd">Qtd</th>
                         <th class="col-desc-p">D%</th>
                         <th class="col-desc-vlr">D(R$)</th>
@@ -825,7 +815,7 @@
         </div>
 
         <div style="text-align: center; font-size: 10px; color: #999; margin-top: 20px;" class="version-footer">
-            SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.2.7-LS</strong> | 2026
+            SISTEMA NEK PEDIDOS | <strong>VERSÃO 3.3.1-LS</strong> | 2026
         </div>
 
     </div>
@@ -1102,10 +1092,26 @@
             const r = getRazaoFinal().replace(/\s+/g, '_');
             zip.file(`IMPORTAR_${r}.csv`, gerarConteudoCSV());
 
-            let resumo = `===========================================\n      RESUMO DO PEDIDO - NEK\n===========================================\n`;
-            resumo += `Data:      ${new Date().toLocaleDateString('pt-BR')}\nCliente:   ${getRazaoFinal()}\nCNPJ:      ${getCnpjFinal()}\nTelefone:  ${document.getElementById('telefone').value}\nContato:   ${document.getElementById('nomeContato').value}\nEndereço:  ${document.getElementById('endereco').value}\n-------------------------------------------\nTOTAL DO PEDIDO: ${document.getElementById('headerTotalGeral').innerText}\n-------------------------------------------\nOBS: ${document.getElementById('obsVenda').value}\n\nITENS DO PEDIDO:\nCODIGO      | QTD | TOTAL C/ IPI\n`;
+            let resumo = `===========================================
+      RESUMO DO PEDIDO - NEK
+===========================================\n`;
+            resumo += `Data:      ${new Date().toLocaleDateString('pt-BR')}
+Cliente:   ${getRazaoFinal()}
+CNPJ:      ${getCnpjFinal()}
+Telefone:  ${document.getElementById('telefone').value}
+Contato:   ${document.getElementById('nomeContato').value}
+Endereço:  ${document.getElementById('endereco').value}
+-------------------------------------------
+TOTAL DO PEDIDO: ${document.getElementById('headerTotalGeral').innerText}
+-------------------------------------------
+OBS: ${document.getElementById('obsVenda').value}
+
+ITENS DO PEDIDO:
+CODIGO      | QTD | DESC % | TOTAL C/ IPI\n`;
             document.querySelectorAll('tr.has-qty').forEach(tr => {
-                resumo += `${tr.cells[0].innerText.padEnd(11)} | ${tr.querySelector('.input-qtd').value.padEnd(3)} | ${tr.cells[10].innerText}\n`;
+                const perc = parseFloat(tr.querySelector('.input-desc').value) || 0;
+                const percStr = (perc > 0 ? perc.toFixed(2).replace('.', ',') + '%' : '0%').padEnd(6);
+                resumo += `${tr.cells[0].innerText.padEnd(11)} | ${tr.querySelector('.input-qtd').value.padEnd(3)} | ${percStr} | ${tr.cells[9].innerText}\n`;
             });
             resumo += `\n===========================================`;
 
@@ -1257,7 +1263,7 @@
                         tr.dataset.search = (c[0] + c[1] + c[3]).toLowerCase();
                         tr.dataset.parentCat = cat;
                         tr.innerHTML = `<td class="col-cod">${c[0]}/${c[1]}</td><td class="col-desc">${c[3]}</td><td class="col-un">${c[2]}</td>
-                        <td class="col-vlr">R$ ${vE.toFixed(2).replace('.', ',')}</td><td class="col-vlr">R$ ${vG.toFixed(2).replace('.', ',')}</td>
+                        <td class="col-vlr">R$ ${vE.toFixed(2).replace('.', ',')}</td>
                         <td class="col-qtd"><input type="number" class="input-qtd" value="${qtdIni}" oninput="atu(this, null, true)" onfocus="this.select()"><span class="print-text">${qtdIni}</span></td>
                         <td class="col-desc-p"><input type="number" class="input-desc" value="${descIni}" oninput="atu(this, 'p', true)" onfocus="this.select()"><span class="print-text">${parseFloat(descIni).toFixed(2).replace('.', ',')}%</span></td>
                         <td class="col-desc-vlr"><input type="number" class="input-desc-vlr" value="${descVlrIni}" oninput="atu(this, 'v', true)" step="0.01" onfocus="this.select()"><span class="print-text">R$ ${descVlrIni.toFixed(2).replace('.', ',')}</span></td>
@@ -1308,9 +1314,9 @@
             const subE = (vE * q) * (1 - (d / 100));
             const subG = (vG * q) * (1 - (d / 100));
 
-            tr.cells[8].innerText = "R$ " + vGLiq.toFixed(2).replace('.', ',');
-            tr.cells[9].innerText = "R$ " + subE.toFixed(2).replace('.', ',');
-            tr.cells[10].innerText = "R$ " + subG.toFixed(2).replace('.', ',');
+            tr.cells[7].innerText = "R$ " + vGLiq.toFixed(2).replace('.', ',');
+            tr.cells[8].innerText = "R$ " + subE.toFixed(2).replace('.', ',');
+            tr.cells[9].innerText = "R$ " + subG.toFixed(2).replace('.', ',');
 
             let tot = 0;
             document.querySelectorAll('tr.has-qty').forEach(t => {
@@ -1339,8 +1345,8 @@
                 const descP = mainTr.querySelector('.input-desc').value;
                 const inputDescVlr = mainTr.querySelector('.input-desc-vlr');
                 const descVlr = inputDescVlr ? inputDescVlr.value : 0;
-                const vLiq = mainTr.cells[8].innerText;
-                const tot = mainTr.cells[10].innerText;
+                const vLiq = mainTr.cells[7].innerText;
+                const tot = mainTr.cells[9].innerText;
 
                 let cartTr = existingMap.get(cod);
                 if (cartTr) {
@@ -1353,8 +1359,8 @@
                     const iDescVlr = cartTr.querySelector('.input-desc-vlr');
                     if (iDescVlr && document.activeElement !== iDescVlr) iDescVlr.value = descVlr;
 
-                    cartTr.cells[6].innerText = vLiq;
-                    cartTr.cells[7].innerText = tot;
+                    cartTr.cells[5].innerText = vLiq;
+                    cartTr.cells[6].innerText = tot;
 
                     existingMap.delete(cod);
                 } else {
@@ -1363,7 +1369,6 @@
                     let html = `
                         <td>${mainTr.cells[0].innerText}</td>
                         <td style="font-size: 11px;">${desc}</td>
-                        <td style="text-align: right">R$ ${parseFloat(vG).toFixed(2).replace('.', ',')}</td>
                         <td><input type="number" class="input-qtd" value="${qtd}" oninput="updateFromCart(this, '${cod}', 'qtd')" onfocus="this.select()"></td>
                         <td><input type="number" class="input-desc" value="${descP}" oninput="updateFromCart(this, '${cod}', 'p')" onfocus="this.select()"></td>
                     `;
